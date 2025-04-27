@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import ProductDetailsScreen from '../../screens/ProductDetailsScreen';
+import ProductDetailsScreen from '../../screens/product/ProductDetailsScreen';
 import { productDetails } from '../../utils/constants/productDetails';
 
 export default function ProductDetails() {

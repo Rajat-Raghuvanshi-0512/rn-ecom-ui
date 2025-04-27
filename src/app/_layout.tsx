@@ -43,7 +43,7 @@ const RootLayoutNav = () => {
     else if (segments[0] && !inAuthGroup && !inOnboardingGroup) {
       router.replace({ pathname: '/(onboarding)/welcome' });
     }
-  }, [authState.isLoggedIn, segments, isLoading]);
+  }, [authState.isLoggedIn, segments, isLoading, router]);
 
   // Show loading while checking auth state
   if (isLoading) {

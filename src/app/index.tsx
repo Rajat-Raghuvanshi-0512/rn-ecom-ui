@@ -1,6 +1,9 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Root index file that handles basic authentication redirects
+ */
 export default function Index() {
   const { authState } = useAuth();
 

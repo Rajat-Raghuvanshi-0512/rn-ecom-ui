@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 type AuthState = {
   isLoggedIn: boolean;
   userToken: string | null;
-  userInfo: any | null;
+  userInfo: any;
 };
 
 // Define the shape of our context
