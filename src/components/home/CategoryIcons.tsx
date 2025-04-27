@@ -1,27 +1,18 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  Feather,
+  MaterialIcons,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-
-export interface Category {
-  id: number;
-  name: string;
-  icon: any; // Using any for icon names to avoid type issues
-  type?: 'material' | 'ionicons' | 'feather';
-}
-
-const categories: Category[] = [
-  { id: 1, name: 'All', icon: 'grid' },
-  { id: 2, name: 'Shoes', icon: 'bookmark', type: 'material' },
-  { id: 3, name: "Men's", icon: 'shirt-outline', type: 'ionicons' },
-  { id: 4, name: 'Watches', icon: 'watch', type: 'material' },
-  { id: 5, name: 'Electronics', icon: 'headphones', type: 'feather' },
-];
+import { Category, categories } from '../../utils/constants';
 
 type CategoryIconProps = {
   item: Category;
@@ -57,6 +48,14 @@ const CategoryIcon = ({
       case 'ionicons':
         return (
           <Ionicons
+            name={item.icon}
+            size={24}
+            color={isActive ? '#fff' : '#000'}
+          />
+        );
+      case 'material-community':
+        return (
+          <MaterialCommunityIcons
             name={item.icon}
             size={24}
             color={isActive ? '#fff' : '#000'}
@@ -136,5 +135,4 @@ const CategoryIcons = ({
   );
 };
 
-export { categories };
 export default CategoryIcons;

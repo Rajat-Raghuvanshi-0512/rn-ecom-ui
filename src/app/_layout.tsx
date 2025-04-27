@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Stack, useSegments, useRouter, SplashScreen } from 'expo-router';
 import { useAuth, AuthProvider } from '../context/AuthContext';
+import { CartProvider } from '../context/CartContext';
+import { FavoritesProvider } from '../context/FavoritesContext';
 import LoadingScreen from '../components/LoadingScreen';
 import '../global.css';
 
@@ -72,7 +74,11 @@ const RootLayoutNav = () => {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <CartProvider>
+        <FavoritesProvider>
+          <RootLayoutNav />
+        </FavoritesProvider>
+      </CartProvider>
     </AuthProvider>
   );
 }

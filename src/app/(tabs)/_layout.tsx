@@ -2,10 +2,16 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { Platform } from 'react-native';
+import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoritesContext';
+import { Platform, View, Text } from 'react-native';
 
 export default function TabLayout() {
   const { authState } = useAuth();
+  const { getCartItemCount } = useCart();
+  const { favorites } = useFavorites();
+  const cartItemCount = getCartItemCount();
+  const favoritesCount = favorites.length;
 
   // If user is not authenticated, don't render tabs and redirect
   if (!authState.isLoggedIn) {
@@ -42,7 +48,16 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="cart-outline" size={size} color={color} />
+              {cartItemCount > 0 && (
+                <View className="absolute -top-2 -right-2 bg-primary rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                  <Text className="text-white text-xs font-bold">
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -51,7 +66,16 @@ export default function TabLayout() {
         options={{
           title: 'Favorites',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="heart-outline" size={size} color={color} />
+              {favoritesCount > 0 && (
+                <View className="absolute -top-2 -right-2 bg-primary rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                  <Text className="text-white text-xs font-bold">
+                    {favoritesCount > 99 ? '99+' : favoritesCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />

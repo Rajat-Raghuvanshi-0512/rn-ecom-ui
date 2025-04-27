@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Animated as RNAnimated,
+  Alert,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -17,46 +18,39 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
+  withSequence,
+  withDelay,
+  FadeIn,
+  FadeInRight,
+  FadeInDown,
+  SlideInDown,
+  SlideInUp,
+  ZoomIn,
+  interpolate,
+  LinearTransition,
+  Extrapolation,
 } from 'react-native-reanimated';
+import { productDetails as productDetailsData } from '../utils/constants/productDetails';
+import { useCart } from '../context/CartContext';
+import { useFavorites } from '../context/FavoritesContext';
 
 const { width } = Dimensions.get('window');
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface ProductDetailsProps {
   route?: { params: { productId: number } };
 }
 
-// This would typically come from an API or props, but we'll hardcode it for this example
-const productDetails = {
-  id: 1,
-  name: 'Wireless Headphones',
-  price: 70.0,
-  image:
-    'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1000',
-  colors: ['#1E1E1E', '#FF6B6B', '#FFA41B', '#00A8E8', '#777777'],
-  sellerName: 'Syed Noman',
-  rating: 4.8,
-  totalReviews: 320,
-  description:
-    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.",
-  images: [
-    'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1000',
-    'https://images.unsplash.com/photo-1577174881658-0f30ed549adc?q=80&w=1000',
-    'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?q=80&w=1000',
-    'https://images.unsplash.com/photo-1599669454699-248893623440?q=80&w=1000',
-    'https://images.unsplash.com/photo-1484704849700-f032a568e944?q=80&w=1000',
-  ],
-  specifications: [
-    { label: 'Brand', value: 'Sony' },
-    { label: 'Model', value: 'WH-1000XM4' },
-    { label: 'Color', value: 'Silver' },
-    { label: 'Connectivity', value: 'Bluetooth 5.0' },
-    { label: 'Battery Life', value: 'Up to 30 hours' },
-  ],
-};
-
 const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
   const router = useRouter();
   const safeArea = useSafeAreaInsets();
+  const { addToCart } = useCart();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const productId = route?.params?.productId ?? 1;
+  const productDetails = productDetailsData[productId];
+  const isProductFavorite = isFavorite(productId);
+
   const [activeTab, setActiveTab] = useState('Description');
   const [activeColor, setActiveColor] = useState(productDetails.colors[0]);
   const [quantity, setQuantity] = useState(1);
@@ -77,9 +71,66 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
     extrapolate: 'clamp',
   });
 
-  // Animation values
+  // Animation values for enhanced animations
   const scale = useSharedValue(1);
   const addButtonScale = useSharedValue(1);
+  const priceScale = useSharedValue(0.9);
+  const nameOpacity = useSharedValue(0);
+  const quantityContainerScale = useSharedValue(0.8);
+  const tabsTranslateY = useSharedValue(20);
+  const colorsTranslateX = useSharedValue(-20);
+
+  // Initialize animations
+  useEffect(() => {
+    nameOpacity.value = withDelay(300, withTiming(1, { duration: 600 }));
+    priceScale.value = withDelay(500, withSpring(1, { damping: 12 }));
+    quantityContainerScale.value = withDelay(
+      600,
+      withSpring(1, { damping: 14 })
+    );
+    tabsTranslateY.value = withDelay(700, withTiming(0, { duration: 500 }));
+    colorsTranslateX.value = withDelay(400, withTiming(0, { duration: 400 }));
+  }, []);
+
+  // Animated styles for new animations
+  const priceAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: priceScale.value }],
+    opacity: priceScale.value,
+  }));
+
+  const nameAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: nameOpacity.value,
+    transform: [
+      {
+        translateY: interpolate(
+          nameOpacity.value,
+          [0, 1],
+          [10, 0],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
+
+  const tabsAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: tabsTranslateY.value }],
+    opacity: interpolate(
+      tabsTranslateY.value,
+      [20, 0],
+      [0, 1],
+      Extrapolation.CLAMP
+    ),
+  }));
+
+  const colorsAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: colorsTranslateX.value }],
+    opacity: interpolate(
+      colorsTranslateX.value,
+      [-20, 0],
+      [0, 1],
+      Extrapolation.CLAMP
+    ),
+  }));
 
   const imageAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -102,6 +153,15 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
     flatListRef.current?.scrollToIndex({ index, animated: true });
   };
 
+  const handleTabPress = (tab: string) => {
+    // Add a subtle animation when changing tabs
+    tabsTranslateY.value = withSequence(
+      withTiming(2, { duration: 100 }),
+      withTiming(0, { duration: 200 })
+    );
+    setActiveTab(tab);
+  };
+
   const renderImageItem = ({
     item,
     index,
@@ -117,7 +177,10 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
       }}
     >
       <View style={{ height: '100%' }}>
-        <Animated.View style={[imageAnimatedStyle, { height: '100%' }]}>
+        <Animated.View
+          style={[imageAnimatedStyle, { height: '100%' }]}
+          entering={ZoomIn.duration(400)}
+        >
           <Image
             source={{ uri: item }}
             style={{ width, height: 400 }}
@@ -127,6 +190,62 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
       </View>
     </View>
   );
+
+  // Handle add to cart
+  const handleAddToCart = () => {
+    // Animate button press
+    addButtonScale.value = withSequence(
+      withTiming(0.9, { duration: 100 }),
+      withTiming(1, { duration: 100 })
+    );
+
+    // Add to cart with the current quantity
+    for (let i = 0; i < quantity; i++) {
+      addToCart(productId);
+    }
+
+    // Show success message
+    Alert.alert(
+      'Added to Cart',
+      `${quantity} ${productDetails.name} has been added to your cart`,
+      [
+        {
+          text: 'Continue Shopping',
+          style: 'cancel',
+        },
+        {
+          text: 'View Cart',
+          onPress: () => router.push('/(tabs)/cart'),
+        },
+      ]
+    );
+  };
+
+  // Handle favorite toggle with animation
+  const handleToggleFavorite = () => {
+    // Add heart pulse animation
+    addButtonScale.value = withSequence(
+      withTiming(1.2, { duration: 150 }),
+      withTiming(1, { duration: 150 })
+    );
+
+    if (isProductFavorite) {
+      removeFromFavorites(productId);
+    } else {
+      addToFavorites(productId);
+    }
+  };
+
+  // Handle quantity change with animation
+  const handleQuantityChange = (change: number) => {
+    // Animate quantity buttons
+    quantityContainerScale.value = withSequence(
+      withTiming(0.95, { duration: 100 }),
+      withTiming(1, { duration: 150 })
+    );
+
+    setQuantity(Math.max(1, quantity + change));
+  };
 
   return (
     <View className="flex-1 relative bg-white">
@@ -149,21 +268,33 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
           }),
         }}
       >
-        <TouchableOpacity
+        <AnimatedTouchable
           onPress={() => router.back()}
           className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
+          entering={FadeIn.duration(400)}
         >
           <Feather name="chevron-left" size={24} color="#000" />
-        </TouchableOpacity>
+        </AnimatedTouchable>
 
-        <View className="flex-row">
+        <Animated.View
+          className="flex-row"
+          entering={FadeIn.delay(200).duration(500)}
+        >
           <TouchableOpacity className="w-10 h-10 rounded-full bg-white items-center justify-center mr-2 shadow-sm">
             <Feather name="share-2" size={20} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm">
-            <Feather name="heart" size={20} color="#000" />
-          </TouchableOpacity>
-        </View>
+          <AnimatedTouchable
+            className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
+            onPress={handleToggleFavorite}
+            style={[buttonAnimatedStyle]}
+          >
+            <Feather
+              name="heart"
+              size={20}
+              color={isProductFavorite ? '#7F00FF' : '#000'}
+            />
+          </AnimatedTouchable>
+        </Animated.View>
       </RNAnimated.View>
 
       <ScrollView
@@ -177,7 +308,7 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
         scrollEventThrottle={16}
       >
         {/* Product Images Carousel */}
-        <View className="relative">
+        <Animated.View className="relative" entering={FadeIn.duration(400)}>
           <FlatList
             ref={flatListRef}
             data={productDetails.images}
@@ -192,7 +323,10 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
           />
 
           {/* Carousel Indicator */}
-          <View className="flex-row justify-center absolute bottom-6 left-0 right-0 z-10">
+          <Animated.View
+            className="flex-row justify-center absolute bottom-6 left-0 right-0 z-10"
+            entering={SlideInUp.duration(600).delay(300)}
+          >
             {productDetails.images.map((_, index) => (
               <TouchableOpacity
                 key={index}
@@ -204,17 +338,29 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
                 onPress={() => handleImageChange(index)}
               />
             ))}
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
 
         {/* Product Details */}
         <View className="px-4 mt-4">
-          <Text className="text-2xl font-bold">{productDetails.name}</Text>
-          <Text className="text-xl font-bold text-primary mt-1">
-            ${productDetails.price.toFixed(2)}
-          </Text>
+          <Animated.Text
+            className="text-2xl font-bold"
+            style={nameAnimatedStyle}
+          >
+            {productDetails.name}
+          </Animated.Text>
 
-          <View className="flex-row justify-between items-center mt-2">
+          <Animated.Text
+            className="text-xl font-bold text-primary mt-1"
+            style={priceAnimatedStyle}
+          >
+            ${productDetails.price.toFixed(2)}
+          </Animated.Text>
+
+          <Animated.View
+            className="flex-row justify-between items-center mt-2"
+            entering={FadeInRight.delay(400).duration(500)}
+          >
             <Text className="text-gray-600">
               Seller: {productDetails.sellerName}
             </Text>
@@ -225,10 +371,10 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
                 ({productDetails.totalReviews} Reviews)
               </Text>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Color Selection */}
-          <View className="mt-4">
+          <Animated.View className="mt-4" style={colorsAnimatedStyle}>
             <Text className="text-base font-bold mb-2">Color</Text>
             <View className="flex-row">
               {productDetails.colors.map((color, index) => (
@@ -246,17 +392,20 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </Animated.View>
 
           {/* Tabs */}
-          <View className="flex-row border-b border-gray-200 mt-6">
+          <Animated.View
+            className="flex-row border-b border-gray-200 mt-6"
+            style={tabsAnimatedStyle}
+          >
             {['Description', 'Specifications', 'Reviews'].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 className={`px-4 py-2 ${
                   activeTab === tab ? 'border-b-2 border-primary' : ''
                 }`}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => handleTabPress(tab)}
               >
                 <Text
                   className={`${
@@ -269,45 +418,59 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </Animated.View>
 
           {/* Tab Content */}
-          <View className="py-4">
+          <Animated.View
+            className="py-4"
+            entering={FadeIn.duration(400).delay(400)}
+            layout={LinearTransition.springify()}
+          >
             {activeTab === 'Description' && (
-              <Text className="text-gray-600 leading-5">
+              <Animated.Text
+                className="text-gray-600 leading-5"
+                entering={FadeIn.duration(400)}
+              >
                 {productDetails.description}
-              </Text>
+              </Animated.Text>
             )}
 
             {activeTab === 'Specifications' && (
-              <View>
+              <Animated.View entering={FadeIn.duration(400)}>
                 {productDetails.specifications.map((spec, index) => (
-                  <View
+                  <Animated.View
                     key={index}
                     className="flex-row justify-between py-2 border-b border-gray-100"
+                    entering={FadeInDown.delay(index * 50).duration(300)}
                   >
                     <Text className="text-gray-500">{spec.label}</Text>
                     <Text className="font-medium">{spec.value}</Text>
-                  </View>
+                  </Animated.View>
                 ))}
-              </View>
+              </Animated.View>
             )}
 
             {activeTab === 'Reviews' && (
-              <View className="items-center py-4">
+              <Animated.View
+                className="items-center py-4"
+                entering={FadeIn.duration(400)}
+              >
                 <Text className="text-gray-500">Reviews coming soon</Text>
-              </View>
+              </Animated.View>
             )}
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
 
       {/* Bottom Action */}
-      <View className="flex-row items-center justify-between gap-2 py-3 px-4 rounded-full bg-violet-200 absolute bottom-10 w-[90%] left-1/2 -translate-x-[50%] shadow-hard-3">
+      <Animated.View
+        className="flex-row items-center justify-between gap-2 py-3 px-4 rounded-full bg-violet-200 absolute bottom-10 w-[90%] left-1/2 -translate-x-[50%] shadow-hard-3"
+        entering={SlideInDown.duration(600).delay(300)}
+      >
         <View className="flex-row items-center rounded-full bg-white p-2">
           <TouchableOpacity
             className="w-8 h-8 rounded items-center justify-center"
-            onPress={() => setQuantity(Math.max(1, quantity - 1))}
+            onPress={() => handleQuantityChange(-1)}
           >
             <Feather name="minus" size={18} color="#000" />
           </TouchableOpacity>
@@ -316,7 +479,7 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
 
           <TouchableOpacity
             className="w-8 h-8 rounded items-center justify-center"
-            onPress={() => setQuantity(quantity + 1)}
+            onPress={() => handleQuantityChange(1)}
           >
             <Feather name="plus" size={18} color="#000" />
           </TouchableOpacity>
@@ -326,18 +489,13 @@ const ProductDetailsScreen = ({ route }: ProductDetailsProps) => {
           <Animated.View style={buttonAnimatedStyle}>
             <TouchableOpacity
               className="bg-primary px-10 py-4 rounded-full"
-              onPressIn={() => {
-                addButtonScale.value = withSpring(0.95);
-              }}
-              onPressOut={() => {
-                addButtonScale.value = withSpring(1);
-              }}
+              onPress={handleAddToCart}
             >
               <Text className="text-white font-bold text-xl">Add to Cart</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 };
