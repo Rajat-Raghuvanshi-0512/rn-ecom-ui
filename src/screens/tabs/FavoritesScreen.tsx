@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useFavorites } from '../../context/FavoritesContext';
 import { productDetails } from '../../utils/constants/productDetails';
-import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 // Import components
 import EmptyFavorites from '../../components/favorites/EmptyFavorites';
@@ -24,12 +24,14 @@ const FavoritesScreen = () => {
     headerOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
   }, []);
 
-  const headerAnimatedStyle = {
-    opacity: headerOpacity.value,
-    transform: [
-      { translateY: withTiming(headerOpacity.value * 0, { duration: 500 }) },
-    ],
-  };
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: headerOpacity.value,
+      transform: [
+        { translateY: withTiming(0, { duration: 500 }) },
+      ],
+    };
+  });
 
   // Handle removing from favorites
   const handleRemoveFromFavorites = (id: number) => {
